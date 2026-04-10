@@ -548,7 +548,7 @@
             const nodeIndex = nodes.findIndex(n => n === node);
             nodes.splice(nodeIndex, 1);
             
-            // Si le point supprimé était en surbrillance, on enlève la surbrillance
+            // Si le point supprimé était en surbrillance, retirer la surbrillance
             if (highlightedNode === node) {
                 highlightedNode = null;
             }
