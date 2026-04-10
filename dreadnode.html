@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreadNode</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        #sidebar {
+            width: 300px;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            font-size: 20px;
+            margin-bottom: 25px;
+            color: #00d9ff;
+            border-bottom: 2px solid #00d9ff;
+            padding-bottom: 10px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #3a3a3a;
+        }
+
+        .section h2 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #00d9ff;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #3a3a3a;
+            border-radius: 5px;
+            font-size: 14px;
+            background: #1a1a1a;
+            color: white;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+
+        input[type="color"] {
+            width: 100%;
+            height: 40px;
+            border: 1px solid #3a3a3a;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            background: #1a1a1a;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #3a3a3a;
+            border-radius: 5px;
+            font-size: 14px;
+            background: #1a1a1a;
+            color: white;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #00d9ff;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #00b8d4;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 217, 255, 0.3);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            background: black;
+        }
+
+        #info-panel {
+            width: 250px;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+            border-left: 1px solid #3a3a3a;
+        }
+
+        #info-panel h2 {
+            font-size: 18px;
+            color: #00d9ff;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #00d9ff;
+            padding-bottom: 10px;
+        }
+
+        #info-panel .node-name {
+            font-size: 16px;
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        #info-panel .connections-list {
+            list-style: none;
+        }
+
+        #info-panel .connections-list li {
+            background: #2a2a2a;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            border-left: 3px solid #00d9ff;
+            font-size: 14px;
+        }
+
+        #info-panel .connection-label {
+            font-style: italic;
+            color: #888;
+            font-size: 13px;
+        }
+
+        #info-panel .no-selection {
+            color: #888;
+            font-style: italic;
+            font-size: 14px;
+        }
+
+        #info-panel .connection-count {
+            color: #00d9ff;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        #tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            pointer-events: none;
+            display: none;
+            font-size: 14px;
+            z-index: 1000;
+        }
+
+        .message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+
+        .message.success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .message.error {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .message.info {
+            background: #3498db;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h1 id="graphTitle" onclick="editTitle()" style="cursor: pointer;" title="Cliquer pour modifier le titre">Nouveau DreadNode</h1>
+        
+        <div id="message-container"></div>
+
+        <div class="section">
+            <h2>Créer un nouveau point</h2>
+            <input type="text" id="newNodeName" placeholder="Nom du point">
+            <button onclick="createNode()">Créer le point</button>
+        </div>
+
+        <div class="section">
+            <h2>Supprimer un point</h2>
+            <select id="deleteNodeSelect">
+                <option value="">-- Sélectionner un point --</option>
+            </select>
+            <button onclick="deleteNode()" style="background: #e74c3c;">Supprimer le point</button>
+        </div>
+
+        <div class="section">
+            <h2>Créer une connexion</h2>
+            <select id="connectionFrom">
+                <option value="">-- Point de départ --</option>
+            </select>
+            <select id="connectionTo">
+                <option value="">-- Point d'arrivée --</option>
+            </select>
+            <label style="display: block; margin: 10px 0 5px 0; font-size: 14px;">Nom de la connexion (optionnel) :</label>
+            <input type="text" id="connectionName" placeholder="Ex: ami, collègue, parent...">
+            <button onclick="createConnection()">Créer la connexion</button>
+        </div>
+
+        <div class="section">
+            <h2>Supprimer une connexion</h2>
+            <select id="deleteConnectionFrom">
+                <option value="">-- Point de départ --</option>
+            </select>
+            <select id="deleteConnectionTo">
+                <option value="">-- Point d'arrivée --</option>
+            </select>
+            <button onclick="deleteConnection()" style="background: #e74c3c;">Supprimer la connexion</button>
+        </div>
+
+        <div class="section">
+            <h2>Rechercher un nom</h2>
+            <input type="text" id="searchName" placeholder="Nom à rechercher">
+            <button onclick="searchNode()">Rechercher</button>
+            <button onclick="centerOnHighlighted()" style="background: #27ae60; margin-top: 5px;">Centrer la vue</button>
+            <button onclick="clearHighlight()" style="background: #95a5a6; margin-top: 5px;">Effacer la surbrillance</button>
+        </div>
+
+        <div class="section">
+            <h2>Renommer un point</h2>
+            <select id="renameSelect">
+                <option value="">-- Sélectionner un point --</option>
+            </select>
+            <input type="text" id="newName" placeholder="Nouveau nom">
+            <button onclick="renameNode()">Renommer</button>
+        </div>
+
+        <div class="section">
+            <h2>Actions</h2>
+            <button onclick="clearCanvas()" style="background: #e74c3c;">Effacer tout</button>
+        </div>
+
+        <div class="section">
+            <h2>Sauvegarde</h2>
+            <button onclick="exportGraph()">Exporter le graphe</button>
+            <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importGraph(event)">
+            <button onclick="document.getElementById('importFile').click()" style="background: #9b59b6; margin-top: 5px;">Importer un graphe</button>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="canvas"></canvas>
+        <div id="tooltip"></div>
+    </div>
+
+    <div id="info-panel">
+        <h2>Connexions</h2>
+        <div id="info-content">
+            <p class="no-selection">Sélectionnez un point pour voir ses connexions</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+
+        let nodes = [];
+        let connections = [];
+        let highlightedNode = null;
+        let draggedNode = null;
+        let isDragging = false;
+        let hasMoved = false;
+        let graphTitle = 'Graphe de Réseau';
+        
+        // Variables pour le zoom et le pan
+        let scale = 1;
+        let offsetX = 0;
+        let offsetY = 0;
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+
+        // Configuration du canvas
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            draw();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Classe Node
+        class Node {
+            constructor(x, y, name) {
+                this.x = x;
+                this.y = y;
+                this.name = name;
+                this.radius = 20;
+                this.color = '#00d9ff';
+            }
+
+            draw(isHighlighted = false) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                
+                if (isHighlighted) {
+                    ctx.fillStyle = '#ff6b6b';
+                    ctx.strokeStyle = '#ff5252';
+                    ctx.lineWidth = 4;
+                    ctx.shadowColor = '#ff6b6b';
+                    ctx.shadowBlur = 15;
+                } else {
+                    ctx.fillStyle = this.color;
+                    ctx.strokeStyle = '#00b8d4';
+                    ctx.lineWidth = 2;
+                    ctx.shadowColor = '#00d9ff';
+                    ctx.shadowBlur = 10;
+                }
+                
+                ctx.fill();
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Afficher le nom sur le point
+                ctx.fillStyle = '#1a1a1a';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.name.substring(0, 3), this.x, this.y);
+            }
+
+            contains(x, y) {
+                const dx = x - this.x;
+                const dy = y - this.y;
+                return dx * dx + dy * dy <= this.radius * this.radius;
+            }
+        }
+
+        // Classe Connection
+        class Connection {
+            constructor(from, to, name = '') {
+                this.from = from;
+                this.to = to;
+                this.name = name;
+                this.color = '#00d9ff'; // Couleur fixe pour toutes les connexions
+            }
+
+            draw(isHighlighted = false) {
+                ctx.beginPath();
+                ctx.moveTo(this.from.x, this.from.y);
+                ctx.lineTo(this.to.x, this.to.y);
+                
+                if (isHighlighted) {
+                    ctx.strokeStyle = '#ff6b6b';
+                    ctx.lineWidth = 5;
+                    ctx.shadowColor = '#ff6b6b';
+                    ctx.shadowBlur = 15;
+                } else {
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 2;
+                    ctx.shadowBlur = 0;
+                }
+                
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // Fonction de dessin principale
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Sauvegarder l'état du contexte
+            ctx.save();
+            
+            // Appliquer la transformation (zoom et pan)
+            ctx.translate(offsetX, offsetY);
+            ctx.scale(scale, scale);
+
+            // Dessiner les connexions
+            connections.forEach(conn => {
+                const isHighlighted = (highlightedNode === conn.from || highlightedNode === conn.to);
+                conn.draw(isHighlighted);
+            });
+
+            // Dessiner les nœuds
+            nodes.forEach(node => {
+                const isHighlighted = highlightedNode === node;
+                node.draw(isHighlighted);
+            });
+            
+            // Restaurer l'état du contexte
+            ctx.restore();
+        }
+
+        // Convertir les coordonnées écran en coordonnées monde
+        function screenToWorld(screenX, screenY) {
+            return {
+                x: (screenX - offsetX) / scale,
+                y: (screenY - offsetY) / scale
+            };
+        }
+
+        // Modifier le titre du graphe
+        function editTitle() {
+            const newTitle = prompt('Nouveau titre du graphe :', graphTitle);
+            
+            if (newTitle !== null && newTitle.trim() !== '') {
+                graphTitle = newTitle.trim();
+                document.getElementById('graphTitle').textContent = graphTitle;
+                showMessage('Titre modifié', 'success');
+            }
+        }
+
+        // Mettre à jour le panneau d'information
+        function updateInfoPanel() {
+            const infoContent = document.getElementById('info-content');
+            
+            if (!highlightedNode) {
+                infoContent.innerHTML = '<p class="no-selection">Sélectionnez un point pour voir ses connexions</p>';
+                return;
+            }
+
+            // Trouver toutes les connexions de ce nœud
+            const nodeConnections = connections.filter(conn => 
+                conn.from === highlightedNode || conn.to === highlightedNode
+            );
+
+            if (nodeConnections.length === 0) {
+                infoContent.innerHTML = `
+                    <div class="node-name">${highlightedNode.name}</div>
+                    <p class="no-selection">Aucune connexion</p>
+                `;
+                return;
+            }
+
+            // Créer la liste des connexions avec leurs noms
+            let html = `
+                <div class="node-name">${highlightedNode.name}</div>
+                <p class="connection-count">${nodeConnections.length} connexion${nodeConnections.length > 1 ? 's' : ''}</p>
+                <ul class="connections-list">
+            `;
+
+            nodeConnections.forEach(conn => {
+                const connectedNodeName = conn.from === highlightedNode ? conn.to.name : conn.from.name;
+                const connectionLabel = conn.name ? ` <span class="connection-label">(${conn.name})</span>` : '';
+                html += `<li>${connectedNodeName}${connectionLabel}</li>`;
+            });
+
+            html += '</ul>';
+            infoContent.innerHTML = html;
+        }
+
+        // Créer un nouveau point
+        function createNode() {
+            const name = document.getElementById('newNodeName').value.trim();
+            
+            if (!name) {
+                showMessage('Veuillez entrer un nom pour le point', 'error');
+                return;
+            }
+
+            // Vérifier si le nom existe déjà
+            if (nodes.find(n => n.name === name)) {
+                showMessage('Un point avec ce nom existe déjà', 'error');
+                return;
+            }
+
+            // Position aléatoire
+            const x = Math.random() * (canvas.width - 100) + 50;
+            const y = Math.random() * (canvas.height - 100) + 50;
+
+            const node = new Node(x, y, name);
+            nodes.push(node);
+            
+            updateSelects();
+            draw();
+            
+            document.getElementById('newNodeName').value = '';
+            showMessage(`Point "${name}" créé avec succès`, 'success');
+        }
+
+        // Supprimer un point
+        function deleteNode() {
+            const nodeName = document.getElementById('deleteNodeSelect').value;
+            
+            if (!nodeName) {
+                showMessage('Veuillez sélectionner un point', 'error');
+                return;
+            }
+
+            if (!confirm(`Êtes-vous sûr de vouloir supprimer le point "${nodeName}" et toutes ses connexions ?`)) {
+                return;
+            }
+
+            const node = nodes.find(n => n.name === nodeName);
+            
+            // Supprimer toutes les connexions liées à ce point
+            connections = connections.filter(c => c.from !== node && c.to !== node);
+            
+            // Supprimer le point
+            const nodeIndex = nodes.findIndex(n => n === node);
+            nodes.splice(nodeIndex, 1);
+            
+            // Si le point supprimé était en surbrillance, on enlève la surbrillance
+            if (highlightedNode === node) {
+                highlightedNode = null;
+            }
+            
+            updateSelects();
+            draw();
+            updateInfoPanel();
+            showMessage(`Point "${nodeName}" supprimé`, 'success');
+        }
+
+        // Créer une connexion
+        function createConnection() {
+            const fromName = document.getElementById('connectionFrom').value;
+            const toName = document.getElementById('connectionTo').value;
+            const connectionName = document.getElementById('connectionName').value.trim();
+
+            if (!fromName || !toName) {
+                showMessage('Veuillez sélectionner les deux points', 'error');
+                return;
+            }
+
+            if (fromName === toName) {
+                showMessage('Impossible de connecter un point à lui-même', 'error');
+                return;
+            }
+
+            const fromNode = nodes.find(n => n.name === fromName);
+            const toNode = nodes.find(n => n.name === toName);
+
+            // Vérifier si la connexion existe déjà
+            const exists = connections.find(c => 
+                (c.from === fromNode && c.to === toNode) || 
+                (c.from === toNode && c.to === fromNode)
+            );
+
+            if (exists) {
+                showMessage('Cette connexion existe déjà', 'error');
+                return;
+            }
+
+            const connection = new Connection(fromNode, toNode, connectionName);
+            connections.push(connection);
+            
+            draw();
+            updateInfoPanel();
+            
+            document.getElementById('connectionName').value = '';
+            showMessage(`Connexion créée entre "${fromName}" et "${toName}"`, 'success');
+        }
+
+        // Supprimer une connexion
+        function deleteConnection() {
+            const fromName = document.getElementById('deleteConnectionFrom').value;
+            const toName = document.getElementById('deleteConnectionTo').value;
+
+            if (!fromName || !toName) {
+                showMessage('Veuillez sélectionner les deux points', 'error');
+                return;
+            }
+
+            const fromNode = nodes.find(n => n.name === fromName);
+            const toNode = nodes.find(n => n.name === toName);
+
+            // Trouver la connexion
+            const connectionIndex = connections.findIndex(c => 
+                (c.from === fromNode && c.to === toNode) || 
+                (c.from === toNode && c.to === fromNode)
+            );
+
+            if (connectionIndex === -1) {
+                showMessage('Cette connexion n\'existe pas', 'error');
+                return;
+            }
+
+            connections.splice(connectionIndex, 1);
+            
+            draw();
+            updateInfoPanel();
+            showMessage(`Connexion supprimée entre "${fromName}" et "${toName}"`, 'success');
+        }
+
+        // Rechercher un point
+        function searchNode() {
+            const name = document.getElementById('searchName').value.trim();
+            
+            if (!name) {
+                showMessage('Veuillez entrer un nom à rechercher', 'error');
+                return;
+            }
+
+            const node = nodes.find(n => n.name.toLowerCase() === name.toLowerCase());
+
+            if (!node) {
+                showMessage(`Point "${name}" non trouvé`, 'error');
+                highlightedNode = null;
+                draw();
+                updateInfoPanel();
+                return;
+            }
+
+            highlightedNode = node;
+            draw();
+            updateInfoPanel();
+            showMessage(`Point "${name}" trouvé et mis en surbrillance`, 'success');
+        }
+
+        // Effacer la surbrillance
+        function clearHighlight() {
+            highlightedNode = null;
+            draw();
+            updateInfoPanel();
+            showMessage('Surbrillance effacée', 'info');
+        }
+
+        // Centrer la vue sur le point en surbrillance
+        function centerOnHighlighted() {
+            if (!highlightedNode) {
+                showMessage('Aucun point sélectionné', 'error');
+                return;
+            }
+
+            // Calculer les offsets pour centrer le point
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            offsetX = centerX - highlightedNode.x * scale;
+            offsetY = centerY - highlightedNode.y * scale;
+            
+            draw();
+            showMessage(`Vue centrée sur "${highlightedNode.name}"`, 'success');
+        }
+
+        // Renommer un point
+        function renameNode() {
+            const oldName = document.getElementById('renameSelect').value;
+            const newName = document.getElementById('newName').value.trim();
+
+            if (!oldName) {
+                showMessage('Veuillez sélectionner un point', 'error');
+                return;
+            }
+
+            if (!newName) {
+                showMessage('Veuillez entrer un nouveau nom', 'error');
+                return;
+            }
+
+            // Vérifier si le nouveau nom existe déjà
+            if (nodes.find(n => n.name === newName && n.name !== oldName)) {
+                showMessage('Un point avec ce nom existe déjà', 'error');
+                return;
+            }
+
+            const node = nodes.find(n => n.name === oldName);
+            node.name = newName;
+
+            updateSelects();
+            draw();
+            
+            document.getElementById('newName').value = '';
+            showMessage(`Point renommé de "${oldName}" à "${newName}"`, 'success');
+        }
+
+        // Mettre à jour les listes déroulantes
+        function updateSelects() {
+            const selects = ['connectionFrom', 'connectionTo', 'renameSelect', 'deleteConnectionFrom', 'deleteConnectionTo', 'deleteNodeSelect'];
+            
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">-- Sélectionner --</option>';
+                
+                nodes.forEach(node => {
+                    const option = document.createElement('option');
+                    option.value = node.name;
+                    option.textContent = node.name;
+                    select.appendChild(option);
+                });
+
+                // Restaurer la sélection si possible
+                if (nodes.find(n => n.name === currentValue)) {
+                    select.value = currentValue;
+                }
+            });
+        }
+
+        // Effacer tout
+        function clearCanvas() {
+            if (nodes.length === 0 && connections.length === 0) {
+                showMessage('Le canvas est déjà vide', 'info');
+                return;
+            }
+
+            if (confirm('Êtes-vous sûr de vouloir tout effacer ?')) {
+                nodes = [];
+                connections = [];
+                highlightedNode = null;
+                updateSelects();
+                draw();
+                showMessage('Canvas effacé', 'info');
+            }
+        }
+
+        // Sauvegarder dans le localStorage
+        function saveToLocalStorage() {
+            const data = {
+                nodes: nodes.map(n => ({
+                    x: n.x,
+                    y: n.y,
+                    name: n.name,
+                    color: n.color
+                })),
+                connections: connections.map(c => ({
+                    from: c.from.name,
+                    to: c.to.name,
+                    name: c.name || ''
+                }))
+            };
+            localStorage.setItem('networkGraph', JSON.stringify(data));
+        }
+
+        // Charger depuis le localStorage
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('networkGraph');
+            if (!saved) return;
+
+            try {
+                const data = JSON.parse(saved);
+                
+                // Recréer les nœuds
+                nodes = data.nodes.map(n => {
+                    const node = new Node(n.x, n.y, n.name);
+                    node.color = n.color;
+                    return node;
+                });
+
+                // Recréer les connexions
+                connections = data.connections.map(c => {
+                    const from = nodes.find(n => n.name === c.from);
+                    const to = nodes.find(n => n.name === c.to);
+                    return new Connection(from, to, c.name || '');
+                });
+
+                updateSelects();
+                draw();
+                showMessage('Graphe chargé automatiquement', 'success');
+            } catch (e) {
+                console.error('Erreur lors du chargement:', e);
+            }
+        }
+
+        // Exporter le graphe
+        function exportGraph() {
+            // Demander le nom du fichier à l'utilisateur
+            const defaultName = `graphe_reseau_${new Date().toISOString().slice(0, 10)}`;
+            const fileName = prompt('Nom du fichier (sans extension) :', defaultName);
+            
+            // Si l'utilisateur annule ou ne saisit rien
+            if (!fileName || fileName.trim() === '') {
+                showMessage('Export annulé', 'info');
+                return;
+            }
+
+            const data = {
+                title: graphTitle,
+                nodes: nodes.map(n => ({
+                    x: n.x,
+                    y: n.y,
+                    name: n.name,
+                    color: n.color
+                })),
+                connections: connections.map(c => ({
+                    from: c.from.name,
+                    to: c.to.name,
+                    name: c.name || ''
+                })),
+                exportDate: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${fileName.trim()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showMessage('Graphe exporté avec succès', 'success');
+        }
+
+        // Importer un graphe
+        function importGraph(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    if (nodes.length > 0 || connections.length > 0) {
+                        if (!confirm('Un graphe existe déjà. Voulez-vous le remplacer ?')) {
+                            return;
+                        }
+                    }
+
+                    // Charger le titre si présent
+                    if (data.title) {
+                        graphTitle = data.title;
+                        document.getElementById('graphTitle').textContent = graphTitle;
+                    }
+
+                    // Recréer les nœuds
+                    nodes = data.nodes.map(n => {
+                        const node = new Node(n.x, n.y, n.name);
+                        node.color = n.color;
+                        return node;
+                    });
+
+                    // Recréer les connexions
+                    connections = data.connections.map(c => {
+                        const from = nodes.find(n => n.name === c.from);
+                        const to = nodes.find(n => n.name === c.to);
+                        return new Connection(from, to, c.name || '');
+                    });
+
+                    updateSelects();
+                    draw();
+                    showMessage('Graphe importé avec succès', 'success');
+                } catch (error) {
+                    showMessage('Erreur lors de l\'importation du fichier', 'error');
+                    console.error('Erreur:', error);
+                }
+            };
+            reader.readAsText(file);
+
+            // Réinitialiser l'input pour permettre de réimporter le même fichier
+            event.target.value = '';
+        }
+
+        // Afficher un message
+        function showMessage(text, type) {
+            const container = document.getElementById('message-container');
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            
+            container.innerHTML = '';
+            container.appendChild(message);
+
+            setTimeout(() => {
+                message.style.opacity = '0';
+                message.style.transition = 'opacity 0.5s';
+                setTimeout(() => message.remove(), 500);
+            }, 3000);
+        }
+
+        // Fonctions de zoom
+        function zoomIn() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const worldPosBefore = screenToWorld(centerX, centerY);
+            
+            scale *= 1.2;
+            if (scale > 5) scale = 5;
+            
+            const worldPosAfter = screenToWorld(centerX, centerY);
+            offsetX += (worldPosAfter.x - worldPosBefore.x) * scale;
+            offsetY += (worldPosAfter.y - worldPosBefore.y) * scale;
+            
+            draw();
+        }
+
+        function zoomOut() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const worldPosBefore = screenToWorld(centerX, centerY);
+            
+            scale *= 0.8;
+            if (scale < 0.1) scale = 0.1;
+            
+            const worldPosAfter = screenToWorld(centerX, centerY);
+            offsetX += (worldPosAfter.x - worldPosBefore.x) * scale;
+            offsetY += (worldPosAfter.y - worldPosBefore.y) * scale;
+            
+            draw();
+        }
+
+        function resetView() {
+            scale = 1;
+            offsetX = 0;
+            offsetY = 0;
+            draw();
+            showMessage('Vue réinitialisée', 'info');
+        }
+
+        // Gestion des événements de la souris
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            // Position de la souris dans le monde avant le zoom
+            const worldPosBefore = screenToWorld(mouseX, mouseY);
+            
+            // Ajuster le zoom
+            const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+            const newScale = scale * zoomFactor;
+            
+            // Limiter le zoom entre 0.1x et 5x
+            if (newScale >= 0.1 && newScale <= 5) {
+                scale = newScale;
+                
+                // Position de la souris dans le monde après le zoom
+                const worldPosAfter = screenToWorld(mouseX, mouseY);
+                
+                // Ajuster l'offset pour que le zoom se fasse vers le curseur
+                offsetX += (worldPosAfter.x - worldPosBefore.x) * scale;
+                offsetY += (worldPosAfter.y - worldPosBefore.y) * scale;
+                
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
+            const world = screenToWorld(screenX, screenY);
+
+            // Si clic avec la molette ou Ctrl+clic, activer le pan
+            if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
+                isPanning = true;
+                panStartX = screenX;
+                panStartY = screenY;
+                canvas.style.cursor = 'grabbing';
+                e.preventDefault();
+                return;
+            }
+
+            // Sinon, vérifier si on clique sur un point
+            for (let node of nodes) {
+                if (node.contains(world.x, world.y)) {
+                    draggedNode = node;
+                    isDragging = true;
+                    hasMoved = false;
+                    canvas.style.cursor = 'grabbing';
+                    return;
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
+            const world = screenToWorld(screenX, screenY);
+
+            // Gérer le pan
+            if (isPanning) {
+                const dx = screenX - panStartX;
+                const dy = screenY - panStartY;
+                offsetX += dx;
+                offsetY += dy;
+                panStartX = screenX;
+                panStartY = screenY;
+                draw();
+                return;
+            }
+
+            // Gérer le déplacement de point
+            if (isDragging && draggedNode) {
+                draggedNode.x = world.x;
+                draggedNode.y = world.y;
+                hasMoved = true;
+                draw();
+                return;
+            }
+
+            let nodeFound = false;
+
+            for (let node of nodes) {
+                if (node.contains(world.x, world.y)) {
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (e.clientX + 10) + 'px';
+                    tooltip.style.top = (e.clientY + 10) + 'px';
+                    tooltip.textContent = node.name;
+                    canvas.style.cursor = 'grab';
+                    nodeFound = true;
+                    break;
+                }
+            }
+
+            if (!nodeFound) {
+                tooltip.style.display = 'none';
+                canvas.style.cursor = isPanning ? 'grabbing' : 'crosshair';
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            // Arrêter le pan
+            if (isPanning) {
+                isPanning = false;
+                canvas.style.cursor = 'crosshair';
+                return;
+            }
+
+            if (isDragging && draggedNode) {
+                // Si le point a été déplacé, on redessine
+                if (hasMoved) {
+                    draw();
+                } else {
+                    // Si le point n'a pas été déplacé, c'est un clic pour la surbrillance
+                    if (highlightedNode === draggedNode) {
+                        highlightedNode = null;
+                    } else {
+                        highlightedNode = draggedNode;
+                    }
+                    draw();
+                    updateInfoPanel();
+                }
+                
+                isDragging = false;
+                draggedNode = null;
+                hasMoved = false;
+                canvas.style.cursor = 'crosshair';
+                return;
+            }
+
+            const rect = canvas.getBoundingClientRect();
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
+            const world = screenToWorld(screenX, screenY);
+
+            for (let node of nodes) {
+                if (node.contains(world.x, world.y)) {
+                    // Si on clique sur le même point, on retire la surbrillance
+                    if (highlightedNode === node) {
+                        highlightedNode = null;
+                    } else {
+                        // Sinon on met en surbrillance le point cliqué
+                        highlightedNode = node;
+                    }
+                    draw();
+                    updateInfoPanel();
+                    return;
+                }
+            }
+
+            // Si on clique en dehors d'un point, on enlève la surbrillance
+            highlightedNode = null;
+            draw();
+            updateInfoPanel();
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+            if (isDragging) {
+                isDragging = false;
+                draggedNode = null;
+                hasMoved = false;
+                canvas.style.cursor = 'crosshair';
+            }
+            if (isPanning) {
+                isPanning = false;
+                canvas.style.cursor = 'crosshair';
+            }
+        });
+
+        // Initialisation
+        draw();
+    </script>
+</body>
+</html>
