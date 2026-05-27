@@ -1,7 +1,7 @@
 # DreadNode
 Outil de création de graphes de réseau pour prosopographe averti
 
-Mise à jour : 10/04/2026
+Mise à jour : 27/05/2026
 
 [Informations HRP] Cet outil a pour but de vous proposer un outil de création de graphes de réseau vous permettant de rescenser des personnes et de tisser des connexions entre elles. Vous pouvez y accéder en téléchargeant le fichier "dreadnode.html" et en l'ouvrant avec le navigateur de votre choix.
 
